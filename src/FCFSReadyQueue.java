@@ -22,7 +22,7 @@ public class FCFSReadyQueue {
 
     public String toString() {
         String out = "";
-        for (PCB p : this.processes) { 
+        for (PCB p : this.processes) {
             out += p.toString() + " | curBurst : " + Integer.toString(p.curBurst) + "\n";
         }
         return out;

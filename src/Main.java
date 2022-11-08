@@ -10,28 +10,26 @@ import java.util.Queue;
 public class Main {
     public static void main(String[] args) throws Exception {
 
-        System.out.println(args[0]);
-
+        // checks command line args and sends them to parameter map
         HashMap<String, String> params = handleArgs(args);
 
         // get data from the text file
         Queue<PCB> jobQueue = getQueueFromFile(params.get("filename"));
-        
+
         // init full report object
         FullReport fr;
         if (params.get("algorithm").equals("RR")) {
             fr = new FullReport(params.get("algorithm"), jobQueue.size(), Integer.parseInt(params.get("quantum")));
-        }
-        else {
+        } else {
             fr = new FullReport(params.get("algorithm"), jobQueue.size());
         }
-        
+
         // prints header of labels for intermediate reports
         intermediateHeader();
 
         // select algorithm to be used
         switch (params.get("algorithm")) {
-            case ("FCFS"): 
+            case ("FCFS"):
                 FCFS(jobQueue, fr);
                 break;
             case ("SJF"):
@@ -48,16 +46,16 @@ public class Main {
         fr.print();
 
     }
-    
+
     static void FCFS(Queue<PCB> processes, FullReport fullReport) {
-        
+
         // Initialize queues and cpu
         FCFSReadyQueue readyQueue = new FCFSReadyQueue();
         BlockedQueue blockedQueue = new BlockedQueue();
         CPU cpu = new CPU();
 
         // populate jobQueue with first 10 processes
-        for(int i = 0; i < 10; i++) {
+        for (int i = 0; i < 10; i++) {
             PCB cur = processes.remove();
             readyQueue.addProcess(cur);
         }
@@ -65,16 +63,16 @@ public class Main {
         // Repeat until all jobs processed and terminated.
         while (!(readyQueue.getSize() == 0 && blockedQueue.getSize() == 0 && cpu.isFree())) {
 
-            //checks if CPU free, then add next process in the queue
+            // checks if CPU free, then add next process in the queue
             if (cpu.isFree()) {
                 cpu.pushProcess(readyQueue.getNext());
                 cpu.setDeadline(cpu.counter + cpu.curProcess.bursts[cpu.curProcess.curBurst]);
 
                 // add to cpu shot count
                 cpu.curProcess.report.cpuShots++;
-                
+
             }
-            
+
             // check if cpu is done current burst
             if (cpu.isComplete()) {
 
@@ -86,7 +84,7 @@ public class Main {
                     // Process has finished execution, generate report and discard
                     cpu.curProcess.report.prepReport(cpu);
                     cpu.curProcess.report.print();
-                    
+
                     // add to fullReport object
                     fullReport.addData(cpu.curProcess.report);
 
@@ -101,7 +99,7 @@ public class Main {
                 }
 
                 // send to blockedqueue, for I/O
-                else {                 
+                else {
                     cpu.curProcess.curBurst++;
                     cpu.curProcess.ioComp = cpu.getCounter() + 10;
                     blockedQueue.addProcess(cpu.curProcess);
@@ -117,14 +115,14 @@ public class Main {
 
                     // add to processing time from blockedQueue
                     blockedQueue.processes.peek().report.procTime += 10;
-                    
+
                     // add back to ready queue
                     readyQueue.addProcess(blockedQueue.getNext());
 
                     // set ioComp time for next process in line, if it exists
                     if (blockedQueue.getSize() > 0) {
                         blockedQueue.processes.peek().ioComp = cpu.getCounter() + 10;
-                    } 
+                    }
                 }
             }
 
@@ -144,14 +142,14 @@ public class Main {
     }
 
     static void SJF(Queue<PCB> processes, FullReport fullReport) {
-                
+
         // Initialize queues and cpu
         SJFReadyQueue readyQueue = new SJFReadyQueue();
         BlockedQueue blockedQueue = new BlockedQueue();
         CPU cpu = new CPU();
 
         // populate jobQueue with first 10 processes
-        for(int i = 0; i < 10; i++) {
+        for (int i = 0; i < 10; i++) {
             PCB cur = processes.remove();
             readyQueue.addProcess(cur);
         }
@@ -159,7 +157,7 @@ public class Main {
         // Repeat until all jobs processed and terminated.
         while (!(readyQueue.getSize() == 0 && blockedQueue.getSize() == 0 && cpu.isFree())) {
 
-            //checks if CPU free, then add next process in the queue
+            // checks if CPU free, then add next process in the queue
             if (cpu.isFree()) {
                 if (readyQueue.getSize() > 0) {
                     cpu.pushProcess(readyQueue.getNext());
@@ -170,7 +168,7 @@ public class Main {
                 }
 
             }
-            
+
             // check if cpu is done current burst
             if (cpu.isComplete()) {
 
@@ -182,7 +180,7 @@ public class Main {
                     // Process has finished execution, generate report and discard
                     cpu.curProcess.report.prepReport(cpu);
                     cpu.curProcess.report.print();
-                    
+
                     // add to fullReport object
                     fullReport.addData(cpu.curProcess.report);
 
@@ -197,7 +195,7 @@ public class Main {
                 }
 
                 // send to blockedqueue, for I/O
-                else {                 
+                else {
                     cpu.curProcess.curBurst++;
                     cpu.curProcess.ioComp = cpu.getCounter() + 10;
                     blockedQueue.addProcess(cpu.curProcess);
@@ -206,21 +204,21 @@ public class Main {
                 // clear process
                 cpu.curProcess = null;
             }
-            
+
             // check that top of blocked queue is ready
             if (blockedQueue.getSize() > 0) {
                 if (blockedQueue.isReady(cpu.getCounter())) {
 
                     // add to processing time from blockedQueue
                     blockedQueue.processes.peek().report.procTime += 10;
-                    
+
                     // add back to ready queue
                     readyQueue.addProcess(blockedQueue.getNext());
 
                     // set ioComp time for next process in line, if it exists
                     if (blockedQueue.getSize() > 0) {
                         blockedQueue.processes.peek().ioComp = cpu.getCounter() + 10;
-                    } 
+                    }
                 }
             }
 
@@ -248,7 +246,7 @@ public class Main {
         int inc = 0;
 
         // populate jobQueue with first 10 processes
-        for(int i = 0; i < 10; i++) {
+        for (int i = 0; i < 10; i++) {
             PCB cur = processes.remove();
             readyQueue.addProcess(cur);
         }
@@ -256,11 +254,12 @@ public class Main {
         // Repeat until all jobs processed and terminated.
         while (!(readyQueue.getSize() == 0 && blockedQueue.getSize() == 0 && cpu.isFree())) {
 
-            // checks if cpu is free and that there processes in ready queue, then sends to processor
-            if(cpu.isFree()) {
+            // checks if cpu is free and that there processes in ready queue, then sends to
+            // processor
+            if (cpu.isFree()) {
                 if (readyQueue.getSize() > 0) {
 
-                    // in this case, we take the minimum of our time quantum and 
+                    // in this case, we take the minimum of our time quantum and
                     // current burst. the cpu deadline is set to this; then the
                     // current burst is decremented to reflect the current partition of burst.
                     cpu.pushProcess(readyQueue.getNext());
@@ -301,14 +300,13 @@ public class Main {
                         cpu.curProcess.ioComp = cpu.getCounter() + 10;
                         blockedQueue.addProcess(cpu.curProcess);
                     }
-                }
-                else {
+                } else {
                     // send to back of ready queue
                     readyQueue.addProcess(cpu.curProcess);
                 }
                 // clear process
                 cpu.curProcess = null;
-                
+
             }
 
             // check if top of blocked queue is ready to go back to readyQueue
@@ -341,7 +339,7 @@ public class Main {
         intermediateReport(readyQueue, blockedQueue, cpu);
 
         fullReport.finalTime = cpu.getCounter();
- 
+
     }
 
     // reports queue sizes and jobs processed for each 200 time block
@@ -351,25 +349,22 @@ public class Main {
         String size;
         if (ready instanceof FCFSReadyQueue) {
             size = Integer.toString(((FCFSReadyQueue) ready).getSize());
-        }
-        else if (ready instanceof SJFReadyQueue) {
+        } else if (ready instanceof SJFReadyQueue) {
             size = Integer.toString(((SJFReadyQueue) ready).getSize());
-        }
-        else {
+        } else {
             size = "";
         }
 
         System.out.printf(
-            "| %-7s | %-7s | %-7s | %-7s |%n",
-            Integer.toString(cpu.getCounter()), size, Integer.toString(blocked.getSize()), Integer.toString(cpu.jobsCompleted)
-        );
+                "| %-7s | %-7s | %-7s | %-7s |%n",
+                Integer.toString(cpu.getCounter()), size, Integer.toString(blocked.getSize()),
+                Integer.toString(cpu.jobsCompleted));
     }
 
     static void intermediateHeader() {
         System.out.printf(
-            "| %-7s | %-7s | %-7s | %-7s |%n",
-            "TIME", "READY", "BLOCKED", "COMP"
-        );
+                "| %-7s | %-7s | %-7s | %-7s |%n",
+                "TIME", "READY", "BLOCKED", "COMP");
     }
 
     static Queue<PCB> getQueueFromFile(String fname) throws FileNotFoundException {
@@ -382,9 +377,9 @@ public class Main {
 
             // get data to integer array, send to PCB object
             String data = reader.nextLine();
-            int[] out = Stream.of(data.split(" ")).mapToInt(Integer::parseInt).toArray(); 
+            int[] out = Stream.of(data.split(" ")).mapToInt(Integer::parseInt).toArray();
             PCB cur = new PCB(out[0], out[1], out[2], Arrays.copyOfRange(out, 3, out.length));
-            
+
             // add to list of processors
             queue.add(cur);
         }
@@ -394,7 +389,7 @@ public class Main {
     }
 
     static HashMap<String, String> handleArgs(String[] args) throws Exception {
-        if (!(args[0].equals("FCFS") |  args[0].equals("SJF") | args[0].equals("RR"))) {
+        if (!(args[0].equals("FCFS") | args[0].equals("SJF") | args[0].equals("RR"))) {
             throw new Exception("Illegal algorithm. Choose from FCFS, SJF, RR.");
         }
 
@@ -405,13 +400,11 @@ public class Main {
             }
             out.put("algorithm", args[0]);
             out.put("filename", args[1]);
-        }
-        else if (args.length == 3) {
+        } else if (args.length == 3) {
             out.put("algorithm", args[0]);
             out.put("quantum", args[1]);
             out.put("filename", args[2]);
-        }
-        else {
+        } else {
             throw new Exception("Illegal number of arguments. Input should be: algorithm[quantum] filename");
         }
 

@@ -1,5 +1,4 @@
 
-
 public class FullReport {
     String algo;
     int finalTime;
@@ -35,7 +34,7 @@ public class FullReport {
     }
 
     public void print() {
-        
+
         // gets averages of each parameter
         int avgProc = (int) (totalProc / totalJobs);
         int avgWait = (int) (totalWait / totalJobs);
@@ -44,18 +43,22 @@ public class FullReport {
 
         // prints into nicely formatted table
         System.out.println();
-        System.out.printf("===========================================================================================%n");
-        System.out.printf("|                                      FINAL REPORT:                                      |%n");
-        System.out.printf("===========================================================================================%n");
         System.out.printf(
-            "| %-12s | %-12s | %-12s | %-12s | %-12s | %-12s |%n",
-            "Algorithm", "Total Time", "Avg Proc", "Avg Wait", "Avg Turn", "Avg Shots"
-        );
-        System.out.printf("===========================================================================================%n");
+                "===========================================================================================%n");
         System.out.printf(
-            "| %-12s | %-12s | %-12s | %-12s | %-12s | %-12s |%n",
-            this.algo, Integer.toString(this.finalTime), Integer.toString(avgProc), Integer.toString(avgWait), Integer.toString(avgTurnaround), Integer.toString(avgShots)
-        );
-        System.out.printf("===========================================================================================%n");
+                "|                                      FINAL REPORT:                                      |%n");
+        System.out.printf(
+                "===========================================================================================%n");
+        System.out.printf(
+                "| %-12s | %-12s | %-12s | %-12s | %-12s | %-12s |%n",
+                "Algorithm", "Total Time", "Avg Proc", "Avg Wait", "Avg Turn", "Avg Shots");
+        System.out.printf(
+                "===========================================================================================%n");
+        System.out.printf(
+                "| %-12s | %-12s | %-12s | %-12s | %-12s | %-12s |%n",
+                this.algo, Integer.toString(this.finalTime), Integer.toString(avgProc), Integer.toString(avgWait),
+                Integer.toString(avgTurnaround), Integer.toString(avgShots));
+        System.out.printf(
+                "===========================================================================================%n");
     }
 }

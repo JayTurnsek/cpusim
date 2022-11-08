@@ -7,7 +7,7 @@ public class BlockedQueue {
     public BlockedQueue() {
         processes = new LinkedList<>();
     }
-    
+
     public void addProcess(PCB proc) {
         this.processes.add(proc);
     }
@@ -15,7 +15,7 @@ public class BlockedQueue {
     public boolean isReady(int cpu_time) {
         return cpu_time >= processes.peek().ioComp;
     }
-    
+
     public PCB getNext() {
         return this.processes.remove();
     }
@@ -26,10 +26,11 @@ public class BlockedQueue {
 
     public String toString() {
         String out = "";
-        for (PCB p : this.processes) { 
-            out += p.toString() + " | curBurst : " + Integer.toString(p.curBurst) + " | ioComp : " + Integer.toString(p.ioComp) + "\n";
+        for (PCB p : this.processes) {
+            out += p.toString() + " | curBurst : " + Integer.toString(p.curBurst) + " | ioComp : "
+                    + Integer.toString(p.ioComp) + "\n";
         }
         return out;
     }
-    
+
 }

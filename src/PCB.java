@@ -1,4 +1,5 @@
 import java.util.Arrays;
+
 /*
  * PCB class implementation to hold data about any given job.
  * jobID:       the specified ID of the job
@@ -19,12 +20,12 @@ public class PCB {
     int ioComp;
     PCBReport report;
 
-    public PCB(int jid, int arrival, int bCount, int[] bursts_arr)  {
+    public PCB(int jid, int arrival, int bCount, int[] bursts_arr) {
         jobID = jid;
         arr = arrival;
         state = 0;
         pc = 0;
-        burstCount = bCount-1;
+        burstCount = bCount - 1;
         bursts = bursts_arr;
         curBurst = 0;
         ioComp = 0;

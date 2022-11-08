@@ -38,6 +38,4 @@ public class CPU {
         return this.counter >= this.deadline && curProcess != null;
     }
 
-
-
 }
