@@ -396,11 +396,6 @@ public class Main {
      */
     static HashMap<String, String> handleArgs(String[] args) throws Exception {
 
-        // Ensures that a legal algorithm is entered in the algorithm field.
-        if (!(args[0].equals("FCFS") | args[0].equals("SJF") | args[0].equals("RR"))) {
-            throw new Exception("Illegal algorithm. Choose from FCFS, SJF, RR.");
-        }
-
         HashMap<String, String> out = new HashMap<String, String>();
 
         // This ensures that both that there is the right amount of arguments, and that
@@ -418,6 +413,11 @@ public class Main {
             out.put("filename", args[2]);
         } else {
             throw new Exception("Illegal number of arguments. Input should be: algorithm[quantum] filename");
+        }
+
+        // Ensures that a legal algorithm is entered in the algorithm field.
+        if (!(args[0].equals("FCFS") | args[0].equals("SJF") | args[0].equals("RR"))) {
+            throw new Exception("Illegal algorithm. Choose from FCFS, SJF, RR.");
         }
 
         return out;
