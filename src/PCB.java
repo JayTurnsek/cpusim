@@ -2,17 +2,19 @@ import java.util.Arrays;
 
 /*
  * PCB class implementation to hold data about any given job.
- * jobID:       the specified ID of the job
- * state: 0:    ready, 1: running, 2: blocked
- * pc:          simulated program counter
- * burstCount:  number of CPU bursts
- * curBurst:    current CPU burst
- * ioComp:      completion time of current I/O operation
+ * 
+ * @param jobID: the specified ID of the process
+ * @param state: current state of the process
+ * @param pc: simulated program counter
+ * @param burstCount: number of CPU bursts
+ * @param curBurst: current CPU burst
+ * @param ioComp: completion time of current I/O operation
+ * @param report: holds statistics about this process in the simulation.
  */
 public class PCB {
     int jobID;
     int arr;
-    int state;
+    String state;
     int pc;
     int burstCount;
     int[] bursts;
@@ -23,7 +25,7 @@ public class PCB {
     public PCB(int jid, int arrival, int bCount, int[] bursts_arr) {
         jobID = jid;
         arr = arrival;
-        state = 0;
+        state = "Ready";
         pc = 0;
         burstCount = bCount - 1;
         bursts = bursts_arr;

@@ -1,6 +1,10 @@
 import java.util.LinkedList;
 import java.util.Queue;
 
+/*
+ * Data structure used to hold processes waiting for I/O. Typical FIFO queue used for implementation.
+ * Ommitted method headers that are self explanitory.
+ */
 public class BlockedQueue {
     Queue<PCB> processes;
 
@@ -12,8 +16,20 @@ public class BlockedQueue {
         this.processes.add(proc);
     }
 
-    public boolean isReady(int cpu_time) {
-        return cpu_time >= processes.peek().ioComp;
+    /*
+     * Used to check if the current process at the top of the queue has completed
+     * it's I/O operation (assumed to be 10 time units)
+     * 
+     * @param cpuTime the current time of the cpu counter
+     * 
+     * @returns True if the I/O process is complete, False otherwise.
+     */
+    public boolean isReady(int cpuTime) {
+        return cpuTime >= processes.peek().ioComp;
+    }
+
+    public PCB peek() {
+        return this.processes.peek();
     }
 
     public PCB getNext() {

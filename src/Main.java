@@ -7,6 +7,14 @@ import java.util.stream.Stream;
 import java.util.LinkedList;
 import java.util.Queue;
 
+/*
+ * Main method for carrying out CPU scheduling algorithm simulation. Command line args are as follows:
+ * algorithm[quantum] filename
+ * 
+ * @param algorithm Denotes algorithm to be used
+ * @param quantum is time quantum to be used if round robin selected
+ * @param filename is the name of the file with the job data ***MUST BE IN SAME DIRECTORY***
+ */
 public class Main {
     public static void main(String[] args) throws Exception {
 
@@ -24,7 +32,7 @@ public class Main {
             fr = new FullReport(params.get("algorithm"), jobQueue.size());
         }
 
-        // prints header of labels for intermediate reports
+        // prints header of labels for intermediate reports (every 200 time steps)
         intermediateHeader();
 
         // select algorithm to be used
@@ -38,8 +46,6 @@ public class Main {
             case ("RR"):
                 RR(jobQueue, fr, Integer.parseInt(params.get("quantum")));
                 break;
-            default:
-                throw new Exception("Illegal scheduling algorithm.");
         }
 
         // prints aggregate report
@@ -47,6 +53,21 @@ public class Main {
 
     }
 
+    /*
+     * Simulates the First-Come-First-Serve scheduling algorithm, where processes
+     * are sent to the CPU
+     * in the order they arrive in. Jobs are held in a ready queue, then sent to CPU
+     * to complete the current burst,
+     * Then sent to a blocking queue where they wait to complete an I/O operation.
+     * Reports are printed to the console
+     * every 200 time steps, and when a process is finished completely.
+     * 
+     * @param processes Is the job queue of jobs that need to pass through the
+     * simulation.
+     * 
+     * @param fullReport Is the aggregate report object that holds final statistics
+     * from the entire simulation.
+     */
     static void FCFS(Queue<PCB> processes, FullReport fullReport) {
 
         // Initialize queues and cpu
@@ -61,16 +82,11 @@ public class Main {
         }
 
         // Repeat until all jobs processed and terminated.
-        while (!(readyQueue.getSize() == 0 && blockedQueue.getSize() == 0 && cpu.isFree())) {
+        while (jobsPresent(readyQueue, blockedQueue, cpu)) {
 
             // checks if CPU free, then add next process in the queue
             if (cpu.isFree()) {
-                cpu.pushProcess(readyQueue.getNext());
-                cpu.setDeadline(cpu.counter + cpu.curProcess.bursts[cpu.curProcess.curBurst]);
-
-                // add to cpu shot count
-                cpu.curProcess.report.cpuShots++;
-
+                loadProcess(readyQueue.getNext(), cpu);
             }
 
             // check if cpu is done current burst
@@ -79,30 +95,19 @@ public class Main {
                 // add to processing time
                 cpu.curProcess.report.procTime += cpu.curProcess.bursts[cpu.curProcess.curBurst];
 
+                // Check if this was it's last burst
                 if (cpu.curProcess.curBurst == cpu.curProcess.burstCount) {
 
-                    // Process has finished execution, generate report and discard
-                    cpu.curProcess.report.prepReport(cpu);
-                    cpu.curProcess.report.print();
-
-                    // add to fullReport object
-                    fullReport.addData(cpu.curProcess.report);
-
-                    cpu.jobsCompleted++;
+                    // Clean up and discard process
+                    finishProcess(cpu, fullReport);
 
                     // add another process to ready queue
-                    if (processes.size() > 0) {
-                        if (processes.peek().arr <= cpu.counter) {
-                            readyQueue.addProcess(processes.remove());
-                        }
-                    }
+                    populateQueue(processes, readyQueue, cpu);
                 }
 
                 // send to blockedqueue, for I/O
                 else {
-                    cpu.curProcess.curBurst++;
-                    cpu.curProcess.ioComp = cpu.getCounter() + 10;
-                    blockedQueue.addProcess(cpu.curProcess);
+                    sendToBlockedQueue(cpu.curProcess, blockedQueue, cpu.getCounter());
                 }
 
                 // clear process
@@ -110,21 +115,7 @@ public class Main {
             }
 
             // check that top of blocked queue is ready
-            if (blockedQueue.getSize() > 0) {
-                if (blockedQueue.isReady(cpu.getCounter())) {
-
-                    // add to processing time from blockedQueue
-                    blockedQueue.processes.peek().report.procTime += 10;
-
-                    // add back to ready queue
-                    readyQueue.addProcess(blockedQueue.getNext());
-
-                    // set ioComp time for next process in line, if it exists
-                    if (blockedQueue.getSize() > 0) {
-                        blockedQueue.processes.peek().ioComp = cpu.getCounter() + 10;
-                    }
-                }
-            }
+            checkBlockedQueue(blockedQueue, readyQueue, cpu);
 
             // 200 level reports
             if (cpu.getCounter() % 200 == 0) {
@@ -141,6 +132,21 @@ public class Main {
         fullReport.finalTime = cpu.getCounter();
     }
 
+    /*
+     * Simulates the Shortest-Job-First scheduling algorithm, where processes are
+     * arranged in the readyQueue
+     * in the order of shortest current burst first, then sent to CPU to complete
+     * the current burst,
+     * then sent to a blocking queue where they wait to complete an I/O operation.
+     * Reports are printed to the console
+     * every 200 time steps, and when a process is finished completely.
+     * 
+     * @param processes Is the job queue of jobs that need to pass through the
+     * simulation.
+     * 
+     * @param fullReport Is the aggregate report object that holds final statistics
+     * from the entire simulation.
+     */
     static void SJF(Queue<PCB> processes, FullReport fullReport) {
 
         // Initialize queues and cpu
@@ -155,16 +161,12 @@ public class Main {
         }
 
         // Repeat until all jobs processed and terminated.
-        while (!(readyQueue.getSize() == 0 && blockedQueue.getSize() == 0 && cpu.isFree())) {
+        while (jobsPresent(readyQueue, blockedQueue, cpu)) {
 
             // checks if CPU free, then add next process in the queue
             if (cpu.isFree()) {
                 if (readyQueue.getSize() > 0) {
-                    cpu.pushProcess(readyQueue.getNext());
-                    cpu.setDeadline(cpu.counter + cpu.curProcess.bursts[cpu.curProcess.curBurst]);
-
-                    // add to cpu shot count
-                    cpu.curProcess.report.cpuShots++;
+                    loadProcess(readyQueue.getNext(), cpu);
                 }
 
             }
@@ -178,27 +180,15 @@ public class Main {
                 if (cpu.curProcess.curBurst == cpu.curProcess.burstCount) {
 
                     // Process has finished execution, generate report and discard
-                    cpu.curProcess.report.prepReport(cpu);
-                    cpu.curProcess.report.print();
-
-                    // add to fullReport object
-                    fullReport.addData(cpu.curProcess.report);
-
-                    cpu.jobsCompleted++;
+                    finishProcess(cpu, fullReport);
 
                     // add another process to ready queue
-                    if (processes.size() > 0) {
-                        if (processes.peek().arr <= cpu.counter) {
-                            readyQueue.addProcess(processes.remove());
-                        }
-                    }
+                    populateQueue(processes, readyQueue, cpu);
                 }
 
                 // send to blockedqueue, for I/O
                 else {
-                    cpu.curProcess.curBurst++;
-                    cpu.curProcess.ioComp = cpu.getCounter() + 10;
-                    blockedQueue.addProcess(cpu.curProcess);
+                    sendToBlockedQueue(cpu.curProcess, blockedQueue, cpu.getCounter());
                 }
 
                 // clear process
@@ -206,21 +196,7 @@ public class Main {
             }
 
             // check that top of blocked queue is ready
-            if (blockedQueue.getSize() > 0) {
-                if (blockedQueue.isReady(cpu.getCounter())) {
-
-                    // add to processing time from blockedQueue
-                    blockedQueue.processes.peek().report.procTime += 10;
-
-                    // add back to ready queue
-                    readyQueue.addProcess(blockedQueue.getNext());
-
-                    // set ioComp time for next process in line, if it exists
-                    if (blockedQueue.getSize() > 0) {
-                        blockedQueue.processes.peek().ioComp = cpu.getCounter() + 10;
-                    }
-                }
-            }
+            checkBlockedQueue(blockedQueue, readyQueue, cpu);
 
             // 200 level reports
             if (cpu.getCounter() % 200 == 0) {
@@ -237,6 +213,28 @@ public class Main {
         fullReport.finalTime = cpu.getCounter();
     }
 
+    /*
+     * Simulates the round robin scheduling algorithm, where processes are arranged
+     * in the ready queue
+     * in FCFS, then allocated to the CPU for it's current burst until either the
+     * time quantum has been reached
+     * or the current burst has finished; whichever comes first. Then, the process
+     * is sent to the blocked queue
+     * to wait for an IO operation if it's current burst is finished, or sent to the
+     * back of the ready queue if not.
+     * This process repeats until the process is finished all bursts, then another
+     * process is added from the job queue
+     * until completed.
+     * 
+     * @param processes Is the job queue of jobs that need to pass through the
+     * simulation.
+     * 
+     * @param fullReport Is the aggregate report object that holds final statistics
+     * from the entire simulation.
+     * 
+     * @param quantum Is the time quantum used to control CPU utilization time
+     * periods.
+     */
     static void RR(Queue<PCB> processes, FullReport fullReport, int quantum) {
 
         // Initialize queues and cpu
@@ -259,46 +257,34 @@ public class Main {
             if (cpu.isFree()) {
                 if (readyQueue.getSize() > 0) {
 
-                    // in this case, we take the minimum of our time quantum and
-                    // current burst. the cpu deadline is set to this; then the
-                    // current burst is decremented to reflect the current partition of burst.
-                    cpu.pushProcess(readyQueue.getNext());
-                    inc = Math.min(quantum, cpu.curProcess.bursts[cpu.curProcess.curBurst]);
-                    cpu.setDeadline(cpu.counter + inc);
-                    cpu.curProcess.report.cpuShots++;
+                    // gets the processing time for current burst relative to quantum
+                    // and loads process into cpu.
+                    inc = loadProcessRR(readyQueue.getNext(), cpu, quantum);
                 }
             }
 
             // checks if cpu completed current job
             if (cpu.isComplete()) {
+
                 // add to processing time
                 cpu.curProcess.report.procTime += inc;
+                // handle decrement based on time quantum
                 cpu.curProcess.bursts[cpu.curProcess.curBurst] -= inc;
 
                 // check to see if process has completed current burst
                 if (cpu.curProcess.bursts[cpu.curProcess.curBurst] == 0) {
                     // process has completed all bursts, discard
                     if (cpu.curProcess.curBurst == cpu.curProcess.burstCount) {
-                        cpu.curProcess.report.prepReport(cpu);
-                        cpu.curProcess.report.print();
 
-                        // add to full report object
-                        fullReport.addData(cpu.curProcess.report);
-
-                        cpu.jobsCompleted++;
+                        // finish up with process, discard
+                        finishProcess(cpu, fullReport);
 
                         // add another process from job queue
-                        if (processes.size() > 0) {
-                            if (processes.peek().arr <= cpu.counter) {
-                                readyQueue.addProcess(processes.remove());
-                            }
-                        }
+                        populateQueue(processes, readyQueue, cpu);
                     }
                     // process has not completed all bursts, send to blockedQueue
                     else {
-                        cpu.curProcess.curBurst++;
-                        cpu.curProcess.ioComp = cpu.getCounter() + 10;
-                        blockedQueue.addProcess(cpu.curProcess);
+                        sendToBlockedQueue(cpu.curProcess, blockedQueue, cpu.getCounter());
                     }
                 } else {
                     // send to back of ready queue
@@ -310,21 +296,7 @@ public class Main {
             }
 
             // check if top of blocked queue is ready to go back to readyQueue
-            if (blockedQueue.getSize() > 0) {
-                if (blockedQueue.isReady(cpu.getCounter())) {
-
-                    // add to processing time from blockedQueue
-                    blockedQueue.processes.peek().report.procTime += 10;
-
-                    // add back to ready queue
-                    readyQueue.addProcess(blockedQueue.getNext());
-
-                    // set ioComp time for next process in line; if exists
-                    if (blockedQueue.getSize() > 0) {
-                        blockedQueue.processes.peek().ioComp = cpu.getCounter() + 10;
-                    }
-                }
-            }
+            checkBlockedQueue(blockedQueue, readyQueue, cpu);
 
             // iterate processing counter
             cpu.timeStep();
@@ -342,7 +314,17 @@ public class Main {
 
     }
 
-    // reports queue sizes and jobs processed for each 200 time block
+    /*
+     * Prints report to console every 200 time units containing the current time,
+     * processes in ready queue,
+     * processes in blocked queue, and jobs completed.
+     * 
+     * @param ready is the ready queue
+     * 
+     * @param blocked is the blocked queue
+     * 
+     * @param cpu is the CPU object
+     */
     static void intermediateReport(Object ready, BlockedQueue blocked, CPU cpu) {
 
         // i hate this.
@@ -355,18 +337,33 @@ public class Main {
             size = "";
         }
 
+        // print report
         System.out.printf(
                 "| %-7s | %-7s | %-7s | %-7s |%n",
                 Integer.toString(cpu.getCounter()), size, Integer.toString(blocked.getSize()),
                 Integer.toString(cpu.jobsCompleted));
     }
 
+    /*
+     * Prints the header for the intermediate reports on time, ready queue
+     * processes, blocked
+     * queue proccesses, and jobs completed.
+     */
     static void intermediateHeader() {
         System.out.printf(
                 "| %-7s | %-7s | %-7s | %-7s |%n",
                 "TIME", "READY", "BLOCKED", "COMP");
     }
 
+    /*
+     * Converts text file of jobs to a job queue to be used in a scheduling
+     * simulation.
+     * 
+     * @param fname is the name of the file to be used
+     * 
+     * @returns queue object holding the processes used in the simulation. In
+     * numerical order from 0-n.
+     */
     static Queue<PCB> getQueueFromFile(String fname) throws FileNotFoundException {
         Queue<PCB> queue = new LinkedList<>();
 
@@ -388,12 +385,27 @@ public class Main {
         return queue;
     }
 
+    /*
+     * Command line argument handler, to ensure legal arguments are entered in the
+     * console.
+     * 
+     * @param args is the string args directly from the console
+     * 
+     * @returns out is the hashmap containing all the needed arguments to complete
+     * the simulation.
+     */
     static HashMap<String, String> handleArgs(String[] args) throws Exception {
+
+        // Ensures that a legal algorithm is entered in the algorithm field.
         if (!(args[0].equals("FCFS") | args[0].equals("SJF") | args[0].equals("RR"))) {
             throw new Exception("Illegal algorithm. Choose from FCFS, SJF, RR.");
         }
 
         HashMap<String, String> out = new HashMap<String, String>();
+
+        // This ensures that both that there is the right amount of arguments, and that
+        // there is only 2 if it is not round
+        // robin, and only 3 if it is round robin.
         if (args.length == 2) {
             if (args[0].equals("RR")) {
                 throw new Exception("Illegal number of arguments. Input should be: algorithm[quantum] filename");
@@ -409,5 +421,188 @@ public class Main {
         }
 
         return out;
+    }
+
+    /*
+     * Checks that there are still jobs present in the ecosystem of ready queue,
+     * blocked queue, and CPU.
+     * Intended to be used to break the loop and confirm the simulation is fully
+     * complete.
+     * 
+     * @param readyQueue is the ready queue
+     * 
+     * @param blockedQueue is the blocked queue
+     * 
+     * @param cpu is the cpu
+     * 
+     * @returns True if a job exists in at least one of the three places, False
+     * otherwise.
+     */
+    static boolean jobsPresent(Object readyQueue, BlockedQueue blockedQueue, CPU cpu) {
+
+        // handling the case of FCFS vs SJF as the queuing criteria
+        if (readyQueue instanceof FCFSReadyQueue) {
+            return !(((FCFSReadyQueue) readyQueue).getSize() == 0 && blockedQueue.getSize() == 0 && cpu.isFree());
+        } else {
+            return !(((SJFReadyQueue) readyQueue).getSize() == 0 && blockedQueue.getSize() == 0 && cpu.isFree());
+        }
+    }
+
+    /*
+     * Adds a process from the job queue to the ready queue. Used when a process has
+     * completely
+     * finished and left the simulation ecosystem.
+     * 
+     * @param jobQueue the job queue
+     * 
+     * @param readyQueue the ready queue
+     * 
+     * @param cpu the cpu
+     */
+    static void populateQueue(Queue<PCB> jobQueue, Object readyQueue, CPU cpu) {
+
+        // checks that job queue is not empty and is ready to enter based on arrival
+        // time
+        if (jobQueue.size() > 0) {
+            if (jobQueue.peek().arr <= cpu.counter) {
+
+                // handling the case of FCFS vs SJF as the queuing criteria,
+                // then populating the ready queue with a new job from job queue
+                if (readyQueue instanceof FCFSReadyQueue) {
+                    ((FCFSReadyQueue) readyQueue).addProcess(jobQueue.remove());
+                } else {
+                    ((SJFReadyQueue) readyQueue).addProcess(jobQueue.remove());
+                }
+            }
+        }
+    }
+
+    /*
+     * Used once process has finished all bursts. Prints a report to the console
+     * and updates needed fields
+     * 
+     * @param cpu is the cpu
+     * 
+     * @param fr is the fullReport object used to summarize simulation
+     */
+    static void finishProcess(CPU cpu, FullReport fr) {
+
+        // prep process report
+        cpu.curProcess.report.prepReport(cpu);
+        cpu.curProcess.report.print();
+
+        // add to fullreport object
+        fr.addData(cpu.curProcess.report);
+
+        cpu.jobsCompleted++;
+    }
+
+    /*
+     * Sends a process that has just finished a burst (but not its last) to the
+     * blocked queue
+     * to wait for I/O.
+     * 
+     * @param process is the process being sent to the blocked queue
+     * 
+     * @param blockedQueue is the blocked queue
+     * 
+     * @param time is the current time on the CPU.
+     */
+    static void sendToBlockedQueue(PCB process, BlockedQueue blockedQueue, int time) {
+
+        // Update process parameters, to ensure it runs next burst and waits to complete
+        // I/O operation.
+        process.curBurst++;
+        process.ioComp = time + 10;
+        process.state = "Blocked";
+
+        // adds to blocked queue
+        blockedQueue.addProcess(process);
+    }
+
+    /*
+     * Loads a process into the CPU in the FCFS and SJF algorithms.
+     * 
+     * @param process is the process to be loaded
+     * 
+     * @param cpu is the cpu that the process is being loaded into
+     */
+    static void loadProcess(PCB process, CPU cpu) {
+
+        // push process to the cpu; update needed parameters
+        cpu.pushProcess(process);
+        cpu.curProcess.state = "Running";
+        cpu.curProcess.report.cpuShots++;
+
+        // Sets deadline to the completion time of the current burst
+        cpu.setDeadline(cpu.counter + cpu.curProcess.bursts[cpu.curProcess.curBurst]);
+    }
+
+    /*
+     * Loads a process into the CPU in the RR algorithm. Different to the above
+     * function,
+     * here we set the increment to the minimum of the time quantum and the time
+     * left on the
+     * current burst. The deadline will now be the current time + increment.
+     * 
+     * @param process is the process to be loaded
+     * 
+     * @param cpu is the cpu that the process is being loaded into
+     * 
+     * @param quantum is the time quantum of the RR algorithm being used.
+     * 
+     * @returns inc which is the increment of the deadline, representing the
+     * processing time of this CPU shot.
+     */
+    static int loadProcessRR(PCB process, CPU cpu, int quantum) {
+
+        int increment = Math.min(quantum, process.bursts[process.curBurst]);
+        cpu.pushProcess(process);
+        cpu.setDeadline(cpu.getCounter() + increment);
+        cpu.curProcess.report.cpuShots++;
+        return increment;
+
+    }
+
+    /*
+     * Checks for available processes in the blocked queue that have completed I/O,
+     * that
+     * are ready to be sent back to the ready queue.
+     * 
+     * @param blockedQueue is the blocked queue
+     * 
+     * @param readyQueue is the ready queue
+     * 
+     * @param cpu is the cpu
+     */
+    static void checkBlockedQueue(BlockedQueue blockedQueue, Object readyQueue, CPU cpu) {
+
+        // check if a process is available and ready from blocked queue
+        if (blockedQueue.getSize() > 0) {
+            if (blockedQueue.isReady(cpu.getCounter())) {
+
+                // set state of process
+                blockedQueue.peek().state = "Ready";
+
+                // add to processing time from blockedQueue
+                blockedQueue.peek().report.procTime += 10;
+
+                // add back to ready queue
+                // handling the case of FCFS vs SJF as the queuing criteria
+                if (readyQueue instanceof FCFSReadyQueue) {
+                    ((FCFSReadyQueue) readyQueue).addProcess(blockedQueue.getNext());
+                } else {
+                    ((SJFReadyQueue) readyQueue).addProcess(blockedQueue.getNext());
+                }
+
+                // Set ioComp time for next process in line, if it exists.
+                // This is important and I missed it on my first try, as the I/O job doesn't
+                // take
+                // place until a process has reached the top of the blocked queue.
+                if (blockedQueue.getSize() > 0) {
+                    blockedQueue.processes.peek().ioComp = cpu.getCounter() + 10;
+                }
+            }
+        }
     }
 }

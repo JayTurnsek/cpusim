@@ -1,3 +1,15 @@
+/*
+ * Data class to hold statistics about specific process in simulation.
+ * 
+ * @param jobID: job ID of corresponding process
+ * @param arrTime: time of arrival of process
+ * @param compTime: time process completed fully
+ * @param procTime: total processing time of process
+ * @param waitTime: total time spent waiting in simulation
+ * @param turnaroundTime: total turnaround time of process
+ * @param cpuShots: number of times process had access to the cpu.
+ */
+
 public class PCBReport {
     int jobID;
     int arrTime;
@@ -17,14 +29,25 @@ public class PCBReport {
         cpuShots = 0; // done
     }
 
-    // prints report of terminated process
+    /*
+     * Finishes up filling report with calculations that had to wait until last
+     * burst was completed.
+     * 
+     * @param cpu is the cpu.
+     */
     public void prepReport(CPU cpu) {
         this.compTime = cpu.getCounter();
         this.turnaroundTime = cpu.getCounter() - this.arrTime;
         this.waitTime = this.turnaroundTime - this.procTime;
     }
 
+    /*
+     * Prints complete report of job once it has completed; intended to be used
+     * after last burst finishes processing.
+     */
     public void print() {
+
+        // Prep strings to be sent to console
         String s[] = {
                 "JOB " + Integer.toString(this.jobID) + " DONE.",
                 "Arr Time: " + Integer.toString(this.arrTime),
@@ -34,6 +57,9 @@ public class PCBReport {
                 "Turnaround Time: " + Integer.toString(this.turnaroundTime),
                 "CPU shots:" + Integer.toString(this.cpuShots)
         };
+
+        // Prints nicely formatted report with borders
+        // Contains all fields of PCBReport object.
         System.out.println();
         System.out.println("-".repeat(145));
         System.out.printf(

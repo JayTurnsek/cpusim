@@ -1,6 +1,11 @@
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
+/*
+ * Ready Queue implementation using Shortest Job (current burst time) First as the priority method for a priority queue.
+ * 
+ * param processes Is the queue of processes.
+ */
 public class SJFReadyQueue {
     PriorityQueue<PCB> processes;
 
@@ -30,7 +35,17 @@ public class SJFReadyQueue {
 
 }
 
+/*
+ * Implementation of Comparator class to control the priority criteria. In this
+ * case, the priority is determined by the length of
+ * the current burst the process is on.
+ */
 class PCBComparator implements Comparator<PCB> {
+
+    /*
+     * @returns 1 if p2 priority > p1 priority, -1 if p1 priority < p2 priority, and
+     * 0 if p1 priority = p2 priority.
+     */
     public int compare(PCB p1, PCB p2) {
         if (p1.bursts[p1.curBurst] > p2.bursts[p2.curBurst]) {
             return 1;
