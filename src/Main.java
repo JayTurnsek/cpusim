@@ -25,11 +25,11 @@ public class Main {
         Queue<PCB> jobQueue = getQueueFromFile(params.get("filename"));
 
         // init full report object
-        FullReport fr;
+        Report report;
         if (params.get("algorithm").equals("RR")) {
-            fr = new FullReport(params.get("algorithm"), jobQueue.size(), Integer.parseInt(params.get("quantum")));
+            report = new Report(params.get("algorithm"), jobQueue.size(), Integer.parseInt(params.get("quantum")));
         } else {
-            fr = new FullReport(params.get("algorithm"), jobQueue.size());
+            report = new Report(params.get("algorithm"), jobQueue.size());
         }
 
         // prints header of labels for intermediate reports (every 200 time steps)
@@ -38,18 +38,18 @@ public class Main {
         // select algorithm to be used
         switch (params.get("algorithm")) {
             case ("FCFS"):
-                FCFS(jobQueue, fr);
+                FCFS(jobQueue, report);
                 break;
             case ("SJF"):
-                SJF(jobQueue, fr);
+                SJF(jobQueue, report);
                 break;
             case ("RR"):
-                RR(jobQueue, fr, Integer.parseInt(params.get("quantum")));
+                RR(jobQueue, report, Integer.parseInt(params.get("quantum")));
                 break;
         }
 
         // prints aggregate report
-        fr.print();
+        report.print();
 
     }
 
@@ -65,13 +65,13 @@ public class Main {
      * @param processes Is the job queue of jobs that need to pass through the
      * simulation.
      * 
-     * @param fullReport Is the aggregate report object that holds final statistics
+     * @param report Is the aggregate report object that holds final statistics
      * from the entire simulation.
      */
-    static void FCFS(Queue<PCB> processes, FullReport fullReport) {
+    static void FCFS(Queue<PCB> processes, Report report) {
 
         // Initialize queues and cpu
-        FCFSReadyQueue readyQueue = new FCFSReadyQueue();
+        FIFOReadyQueue readyQueue = new FIFOReadyQueue();
         BlockedQueue blockedQueue = new BlockedQueue();
         CPU cpu = new CPU();
 
@@ -93,13 +93,14 @@ public class Main {
             if (cpu.isComplete()) {
 
                 // add to processing time
-                cpu.curProcess.report.procTime += cpu.curProcess.bursts[cpu.curProcess.curBurst];
+                cpu.curProcess.pc += cpu.curProcess.bursts[cpu.curProcess.curBurst];
 
                 // Check if this was it's last burst
                 if (cpu.curProcess.curBurst == cpu.curProcess.burstCount) {
 
-                    // Clean up and discard process
-                    finishProcess(cpu, fullReport);
+                    // Process is complete, print the report and update the jobs completed
+                    cpu.curProcess.handleReports(cpu, report);
+                    cpu.jobsCompleted++;
 
                     // add another process to ready queue
                     populateQueue(processes, readyQueue, cpu);
@@ -129,7 +130,7 @@ public class Main {
         // NOTE: do i keep? ask
         intermediateReport(readyQueue, blockedQueue, cpu);
 
-        fullReport.finalTime = cpu.getCounter();
+        report.finalTime = cpu.getCounter() - 1;
     }
 
     /*
@@ -144,10 +145,10 @@ public class Main {
      * @param processes Is the job queue of jobs that need to pass through the
      * simulation.
      * 
-     * @param fullReport Is the aggregate report object that holds final statistics
+     * @param report Is the aggregate report object that holds final statistics
      * from the entire simulation.
      */
-    static void SJF(Queue<PCB> processes, FullReport fullReport) {
+    static void SJF(Queue<PCB> processes, Report report) {
 
         // Initialize queues and cpu
         SJFReadyQueue readyQueue = new SJFReadyQueue();
@@ -175,12 +176,13 @@ public class Main {
             if (cpu.isComplete()) {
 
                 // add to processing time
-                cpu.curProcess.report.procTime += cpu.curProcess.bursts[cpu.curProcess.curBurst];
+                cpu.curProcess.pc += cpu.curProcess.bursts[cpu.curProcess.curBurst];
 
                 if (cpu.curProcess.curBurst == cpu.curProcess.burstCount) {
 
-                    // Process has finished execution, generate report and discard
-                    finishProcess(cpu, fullReport);
+                    // Process is complete, print the report and update the jobs completed
+                    cpu.curProcess.handleReports(cpu, report);
+                    cpu.jobsCompleted++;
 
                     // add another process to ready queue
                     populateQueue(processes, readyQueue, cpu);
@@ -210,7 +212,7 @@ public class Main {
         // NOTE: do i keep? ask
         intermediateReport(readyQueue, blockedQueue, cpu);
 
-        fullReport.finalTime = cpu.getCounter();
+        report.finalTime = cpu.getCounter() - 1;
     }
 
     /*
@@ -229,16 +231,16 @@ public class Main {
      * @param processes Is the job queue of jobs that need to pass through the
      * simulation.
      * 
-     * @param fullReport Is the aggregate report object that holds final statistics
+     * @param report Is the aggregate report object that holds final statistics
      * from the entire simulation.
      * 
      * @param quantum Is the time quantum used to control CPU utilization time
      * periods.
      */
-    static void RR(Queue<PCB> processes, FullReport fullReport, int quantum) {
+    static void RR(Queue<PCB> processes, Report report, int quantum) {
 
         // Initialize queues and cpu
-        FCFSReadyQueue readyQueue = new FCFSReadyQueue();
+        FIFOReadyQueue readyQueue = new FIFOReadyQueue();
         BlockedQueue blockedQueue = new BlockedQueue();
         CPU cpu = new CPU();
         int inc = 0;
@@ -250,7 +252,7 @@ public class Main {
         }
 
         // Repeat until all jobs processed and terminated.
-        while (!(readyQueue.getSize() == 0 && blockedQueue.getSize() == 0 && cpu.isFree())) {
+        while (jobsPresent(readyQueue, blockedQueue, cpu)) {
 
             // checks if cpu is free and that there processes in ready queue, then sends to
             // processor
@@ -267,7 +269,7 @@ public class Main {
             if (cpu.isComplete()) {
 
                 // add to processing time
-                cpu.curProcess.report.procTime += inc;
+                cpu.curProcess.pc += inc;
                 // handle decrement based on time quantum
                 cpu.curProcess.bursts[cpu.curProcess.curBurst] -= inc;
 
@@ -276,8 +278,9 @@ public class Main {
                     // process has completed all bursts, discard
                     if (cpu.curProcess.curBurst == cpu.curProcess.burstCount) {
 
-                        // finish up with process, discard
-                        finishProcess(cpu, fullReport);
+                        // Process is complete, print the report and update the jobs completed
+                        cpu.curProcess.handleReports(cpu, report);
+                        cpu.jobsCompleted++;
 
                         // add another process from job queue
                         populateQueue(processes, readyQueue, cpu);
@@ -310,7 +313,7 @@ public class Main {
         // NOTE: do i keep? ask
         intermediateReport(readyQueue, blockedQueue, cpu);
 
-        fullReport.finalTime = cpu.getCounter();
+        report.finalTime = cpu.getCounter() - 1;
 
     }
 
@@ -329,8 +332,8 @@ public class Main {
 
         // i hate this.
         String size;
-        if (ready instanceof FCFSReadyQueue) {
-            size = Integer.toString(((FCFSReadyQueue) ready).getSize());
+        if (ready instanceof FIFOReadyQueue) {
+            size = Integer.toString(((FIFOReadyQueue) ready).getSize());
         } else if (ready instanceof SJFReadyQueue) {
             size = Integer.toString(((SJFReadyQueue) ready).getSize());
         } else {
@@ -441,8 +444,8 @@ public class Main {
     static boolean jobsPresent(Object readyQueue, BlockedQueue blockedQueue, CPU cpu) {
 
         // handling the case of FCFS vs SJF as the queuing criteria
-        if (readyQueue instanceof FCFSReadyQueue) {
-            return !(((FCFSReadyQueue) readyQueue).getSize() == 0 && blockedQueue.getSize() == 0 && cpu.isFree());
+        if (readyQueue instanceof FIFOReadyQueue) {
+            return !(((FIFOReadyQueue) readyQueue).getSize() == 0 && blockedQueue.getSize() == 0 && cpu.isFree());
         } else {
             return !(((SJFReadyQueue) readyQueue).getSize() == 0 && blockedQueue.getSize() == 0 && cpu.isFree());
         }
@@ -464,37 +467,17 @@ public class Main {
         // checks that job queue is not empty and is ready to enter based on arrival
         // time
         if (jobQueue.size() > 0) {
-            if (jobQueue.peek().arr <= cpu.counter) {
+            if (jobQueue.peek().arr <= cpu.getCounter()) {
 
                 // handling the case of FCFS vs SJF as the queuing criteria,
                 // then populating the ready queue with a new job from job queue
-                if (readyQueue instanceof FCFSReadyQueue) {
-                    ((FCFSReadyQueue) readyQueue).addProcess(jobQueue.remove());
+                if (readyQueue instanceof FIFOReadyQueue) {
+                    ((FIFOReadyQueue) readyQueue).addProcess(jobQueue.remove());
                 } else {
                     ((SJFReadyQueue) readyQueue).addProcess(jobQueue.remove());
                 }
             }
         }
-    }
-
-    /*
-     * Used once process has finished all bursts. Prints a report to the console
-     * and updates needed fields
-     * 
-     * @param cpu is the cpu
-     * 
-     * @param fr is the fullReport object used to summarize simulation
-     */
-    static void finishProcess(CPU cpu, FullReport fr) {
-
-        // prep process report
-        cpu.curProcess.report.prepReport(cpu);
-        cpu.curProcess.report.print();
-
-        // add to fullreport object
-        fr.addData(cpu.curProcess.report);
-
-        cpu.jobsCompleted++;
     }
 
     /*
@@ -532,7 +515,7 @@ public class Main {
         // push process to the cpu; update needed parameters
         cpu.pushProcess(process);
         cpu.curProcess.state = "Running";
-        cpu.curProcess.report.cpuShots++;
+        cpu.curProcess.cpuShots++;
 
         // Sets deadline to the completion time of the current burst
         cpu.setDeadline(cpu.counter + cpu.curProcess.bursts[cpu.curProcess.curBurst]);
@@ -559,7 +542,7 @@ public class Main {
         int increment = Math.min(quantum, process.bursts[process.curBurst]);
         cpu.pushProcess(process);
         cpu.setDeadline(cpu.getCounter() + increment);
-        cpu.curProcess.report.cpuShots++;
+        cpu.curProcess.cpuShots++;
         return increment;
 
     }
@@ -585,12 +568,12 @@ public class Main {
                 blockedQueue.peek().state = "Ready";
 
                 // add to processing time from blockedQueue
-                blockedQueue.peek().report.procTime += 10;
+                blockedQueue.peek().pc += 10;
 
                 // add back to ready queue
                 // handling the case of FCFS vs SJF as the queuing criteria
-                if (readyQueue instanceof FCFSReadyQueue) {
-                    ((FCFSReadyQueue) readyQueue).addProcess(blockedQueue.getNext());
+                if (readyQueue instanceof FIFOReadyQueue) {
+                    ((FIFOReadyQueue) readyQueue).addProcess(blockedQueue.getNext());
                 } else {
                     ((SJFReadyQueue) readyQueue).addProcess(blockedQueue.getNext());
                 }

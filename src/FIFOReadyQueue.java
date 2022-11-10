@@ -7,10 +7,10 @@ import java.util.Queue;
  * 
  * param processes Is the queue of processes.
  */
-public class FCFSReadyQueue {
+public class FIFOReadyQueue {
     Queue<PCB> processes;
 
-    public FCFSReadyQueue() {
+    public FIFOReadyQueue() {
         processes = new LinkedList<>();
     }
 

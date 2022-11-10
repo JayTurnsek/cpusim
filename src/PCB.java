@@ -20,7 +20,7 @@ public class PCB {
     int[] bursts;
     int curBurst;
     int ioComp;
-    PCBReport report;
+    int cpuShots;
 
     public PCB(int jid, int arrival, int bCount, int[] bursts_arr) {
         jobID = jid;
@@ -31,10 +31,51 @@ public class PCB {
         bursts = bursts_arr;
         curBurst = 0;
         ioComp = 0;
-        report = new PCBReport(jid, arrival);
+        cpuShots = 0;
     }
 
     public String toString() {
         return "Job ID: " + jobID + " Arrival: " + arr + " Bursts: " + Arrays.toString(bursts);
+    }
+
+    /*
+     * Prints out current processes report to the console (completion time, waiting
+     * time, turnaround time, and total cpu shots).
+     * Also updates the full report to be sent out at the end of the simulation.
+     * 
+     * @param cpu is the cpu
+     * 
+     * @param fr is the full report object tracking aggregate report.
+     */
+    public void handleReports(CPU cpu, Report r) {
+
+        // calculates important times from process simulation
+        int compTime = cpu.getCounter();
+        int turnaroundTime = cpu.getCounter() - this.arr;
+        int waitTime = turnaroundTime - this.pc;
+
+        // updates full report object
+        r.addData(this.pc, waitTime, turnaroundTime, this.cpuShots);
+
+        // Prep strings to be sent to console
+        String s[] = {
+                "JOB " + Integer.toString(this.jobID) + " DONE.",
+                "Arr Time: " + Integer.toString(this.arr),
+                "Comp Time: " + Integer.toString(compTime),
+                "Proc Time: " + Integer.toString(this.pc),
+                "Wait Time: " + Integer.toString(waitTime),
+                "Turnaround Time: " + Integer.toString(turnaroundTime),
+                "CPU shots:" + Integer.toString(this.cpuShots)
+        };
+
+        // Prints nicely formatted report with borders
+        // Contains all fields of PCBReport object.
+        System.out.println();
+        System.out.println("-".repeat(145));
+        System.out.printf(
+                "| %-12s | %-16s | %-20s | %-16s | %-20s | %-25s | %-13s | %n",
+                s[0], s[1], s[2], s[3], s[4], s[5], s[6]);
+        System.out.println("-".repeat(145));
+        System.out.println();
     }
 }

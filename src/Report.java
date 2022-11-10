@@ -1,7 +1,7 @@
 /*
  * Data holding object for providing aggregate data the summarize simulation statistics.
  */
-public class FullReport {
+public class Report {
         String algo;
         int finalTime;
         long totalProc;
@@ -17,7 +17,7 @@ public class FullReport {
          * 
          * @param quantum The time quantum used, if applicable (RR only)
          */
-        public FullReport(String algoType, int numJobs) {
+        public Report(String algoType, int numJobs) {
                 algo = algoType;
                 totalProc = 0;
                 totalWait = 0;
@@ -26,7 +26,7 @@ public class FullReport {
                 totalJobs = numJobs;
         }
 
-        public FullReport(String algoType, int numJobs, int quantum) {
+        public Report(String algoType, int numJobs, int quantum) {
                 algo = algoType + " (q = " + Integer.toString(quantum) + ")";
                 totalProc = 0;
                 totalWait = 0;
@@ -40,11 +40,11 @@ public class FullReport {
          * 
          * @param report A report object held by the process that just completed.
          */
-        public void addData(PCBReport report) {
-                totalProc += report.procTime;
-                totalWait += report.waitTime;
-                totalTurnaround += report.turnaroundTime;
-                totalShots += report.cpuShots;
+        public void addData(int proc, int wait, int turnaround, int shots) {
+                totalProc += proc;
+                totalWait += wait;
+                totalTurnaround += turnaround;
+                totalShots += shots;
         }
 
         /*
