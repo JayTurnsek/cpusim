@@ -10,6 +10,12 @@ import java.util.Queue;
 /*
  * Main method for carrying out CPU scheduling algorithm simulation. Command line args are as follows:
  * algorithm[quantum] filename
+ * I decided to implement this by keeping a CPU time count that iterates one by one instead of incrementing it based
+ * on the current burst length. I figured that made more sense in my mind, thus was easier to implement. It sort of takes
+ * on a more GA style simulation.
+ * 
+ * @author Jay Turnsek
+ * @date 2022-11-09
  * 
  * @param algorithm Denotes algorithm to be used
  * @param quantum is time quantum to be used if round robin selected

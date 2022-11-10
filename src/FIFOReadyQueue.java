@@ -5,6 +5,9 @@ import java.util.Queue;
  * Ready Queue implementation using simple FIFO queue; holds processes in waiting for CPU.
  * Self explanitory methods have no description.
  * 
+ * @author Jay Turnsek
+ * @date 2022-11-09
+ * 
  * param processes Is the queue of processes.
  */
 public class FIFOReadyQueue {

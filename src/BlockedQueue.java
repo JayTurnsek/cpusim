@@ -4,6 +4,9 @@ import java.util.Queue;
 /*
  * Data structure used to hold processes waiting for I/O. Typical FIFO queue used for implementation.
  * Ommitted method headers that are self explanitory.
+ * 
+ * @author Jay Turnsek
+ * @date 2022-11-09
  */
 public class BlockedQueue {
     Queue<PCB> processes;

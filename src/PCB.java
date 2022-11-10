@@ -3,6 +3,9 @@ import java.util.Arrays;
 /*
  * PCB class implementation to hold data about any given job.
  * 
+ * @author Jay Turnsek
+ * @date 2022-11-09
+ * 
  * @param jobID: the specified ID of the process
  * @param state: current state of the process
  * @param pc: simulated program counter

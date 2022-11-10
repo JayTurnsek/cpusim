@@ -1,5 +1,8 @@
 /*
  * CPU class to hold the current process and the overall processing counter.
+ * 
+ * @author Jay Turnsek
+ * @date 2022-11-09
  */
 public class CPU {
     PCB curProcess;

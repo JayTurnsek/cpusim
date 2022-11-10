@@ -1,5 +1,8 @@
 /*
  * Data holding object for providing aggregate data the summarize simulation statistics.
+ * 
+ * @author Jay Turnsek
+ * @date 2022-11-09
  */
 public class Report {
         String algo;

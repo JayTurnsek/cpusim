@@ -4,6 +4,9 @@ import java.util.PriorityQueue;
 /*
  * Ready Queue implementation using Shortest Job (current burst time) First as the priority method for a priority queue.
  * 
+ * @author Jay Turnsek
+ * @date 2022-11-09
+ * 
  * param processes Is the queue of processes.
  */
 public class SJFReadyQueue {
